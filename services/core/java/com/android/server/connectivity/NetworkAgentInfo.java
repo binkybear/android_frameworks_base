@@ -170,6 +170,11 @@ public class NetworkAgentInfo {
         return score;
     }
 
+    // Add Ethernet check
+    public boolean isETHERNET() {
+        return networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET);
+    }
+    
     // Get the current score for this Network.  This may be modified from what the
     // NetworkAgent sent, as it has modifiers applied to it.
     public int getCurrentScore() {

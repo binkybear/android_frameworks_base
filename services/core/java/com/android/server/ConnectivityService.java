@@ -4187,6 +4187,7 @@ public class ConnectivityService extends IConnectivityManager.Stub
             loge("ERROR: nascent network not validated.");
         }
         boolean keep = newNetwork.isVPN();
+        boolean keep_ethernet = newNetwork.isETHERNET();
         boolean isNewDefault = false;
         NetworkAgentInfo oldDefaultNetwork = null;
         if (DBG) log("rematching " + newNetwork.name());
@@ -4222,33 +4223,36 @@ public class ConnectivityService extends IConnectivityManager.Stub
                             (currentNetwork != null ? currentNetwork.getCurrentScore() : 0) +
                             ", newScore = " + newNetwork.getCurrentScore());
                 }
-                if (currentNetwork == null ||
-                        currentNetwork.getCurrentScore() < newNetwork.getCurrentScore()) {
-                    if (currentNetwork != null) {
-                        if (DBG) log("   accepting network in place of " + currentNetwork.name());
-                        currentNetwork.networkRequests.remove(nri.request.requestId);
-                        currentNetwork.networkLingered.add(nri.request);
-                        affectedNetworks.add(currentNetwork);
-                    } else {
-                        if (DBG) log("   accepting network in place of null");
-                    }
-                    unlinger(newNetwork);
-                    mNetworkForRequestId.put(nri.request.requestId, newNetwork);
-                    newNetwork.addRequest(nri.request);
-                    keep = true;
-                    // Tell NetworkFactories about the new score, so they can stop
-                    // trying to connect if they know they cannot match it.
-                    // TODO - this could get expensive if we have alot of requests for this
-                    // network.  Think about if there is a way to reduce this.  Push
-                    // netid->request mapping to each factory?
-                    sendUpdatedScoreToFactories(nri.request, newNetwork.getCurrentScore());
-                    if (mDefaultRequest.requestId == nri.request.requestId) {
-                        isNewDefault = true;
-                        oldDefaultNetwork = currentNetwork;
+                if (!keep_ethernet) {
+                    log("[NH] Ethernet should not get past here");
+                        if (currentNetwork == null ||
+                                currentNetwork.getCurrentScore() < newNetwork.getCurrentScore()) {
+                            if (currentNetwork != null) {
+                                if (DBG) log("   accepting network in place of " + currentNetwork.name());
+                                currentNetwork.networkRequests.remove(nri.request.requestId);
+                                currentNetwork.networkLingered.add(nri.request);
+                                affectedNetworks.add(currentNetwork);
+                            } else {
+                                if (DBG) log("   accepting network in place of null");
+                            }
+                            unlinger(newNetwork);
+                            mNetworkForRequestId.put(nri.request.requestId, newNetwork);
+                            newNetwork.addRequest(nri.request);
+                            keep = true;
+                            // Tell NetworkFactories about the new score, so they can stop
+                            // trying to connect if they know they cannot match it.
+                            // TODO - this could get expensive if we have alot of requests for this
+                            // network.  Think about if there is a way to reduce this.  Push
+                            // netid->request mapping to each factory?
+                            sendUpdatedScoreToFactories(nri.request, newNetwork.getCurrentScore());
+                            if (mDefaultRequest.requestId == nri.request.requestId) {
+                                isNewDefault = true;
+                                oldDefaultNetwork = currentNetwork;
+                            }
+                        }
                     }
                 }
             }
-        }
         // Linger any networks that are no longer needed.
         for (NetworkAgentInfo nai : affectedNetworks) {
             if (nai.everValidated && unneeded(nai)) {
